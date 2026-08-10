@@ -1,28 +1,26 @@
-export const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
-};
-
-export const parseJson = <T>(jsonString: string): T | null => {
-    try {
-        return JSON.parse(jsonString);
-    } catch (error) {
-        console.error('Invalid JSON:', error);
-        return null;
+function validateInput(input: string | number): boolean {
+    if (typeof input === 'string') {
+        return input.trim().length > 0;
     }
-};
+    return typeof input === 'number' && !isNaN(input);
+}
 
-export const debounce = (func: Function, delay: number): Function => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func(...args), delay);
-    };
-};
+function processInput(input: string | number): string {
+    if (!validateInput(input)) {
+        throw new Error('Invalid input');
+    }
+    return `Processed: ${input}`;
+}
 
-export const generateUUID = (): string => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
+function mainLoop(inputs: Array<string | number>) {
+    inputs.forEach(input => {
+        try {
+            const result = processInput(input);
+            console.log(result);
+        } catch (error) {
+            console.error(error.message);
+        }
     });
-};
+}
+
+export { validateInput, processInput, mainLoop };
