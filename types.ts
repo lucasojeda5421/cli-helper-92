@@ -1,0 +1,1 @@
+type User = { id: number; name: string; email: string }; type Response<T> = { data: T; error?: string; }; type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'; interface ApiResponse<T> { success: boolean; result?: T; message?: string; }
