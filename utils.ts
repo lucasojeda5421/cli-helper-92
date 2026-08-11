@@ -1,15 +1,15 @@
-import axios, { AxiosError } from 'axios';
-
 async function retry<T>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> {
+  for (let i = 0; i < retries; i++) {
     try {
-        return await fn();
+      return await fn();
     } catch (error) {
-        if (retries === 0 || !(error instanceof AxiosError)) {
-            throw error;
-        }
+      if (i < retries - 1) {
         await new Promise(res => setTimeout(res, delay));
-        return retry(fn, retries - 1, delay);
+      } else {
+        throw error;
+      }
     }
+  }
 }
 
 export { retry };
