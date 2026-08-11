@@ -1,26 +1,15 @@
-function validateInput(input: string | number): boolean {
-    if (typeof input === 'string') {
-        return input.trim().length > 0;
-    }
-    return typeof input === 'number' && !isNaN(input);
-}
+import axios, { AxiosError } from 'axios';
 
-function processInput(input: string | number): string {
-    if (!validateInput(input)) {
-        throw new Error('Invalid input');
-    }
-    return `Processed: ${input}`;
-}
-
-function mainLoop(inputs: Array<string | number>) {
-    inputs.forEach(input => {
-        try {
-            const result = processInput(input);
-            console.log(result);
-        } catch (error) {
-            console.error(error.message);
+async function retry<T>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> {
+    try {
+        return await fn();
+    } catch (error) {
+        if (retries === 0 || !(error instanceof AxiosError)) {
+            throw error;
         }
-    });
+        await new Promise(res => setTimeout(res, delay));
+        return retry(fn, retries - 1, delay);
+    }
 }
 
-export { validateInput, processInput, mainLoop };
+export { retry };
