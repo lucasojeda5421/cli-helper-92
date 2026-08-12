@@ -1,24 +1,31 @@
-import { validateInput } from './utils';
+import axios from 'axios';
+import { ApiResponse, ApiError } from './types';
 
-interface InputData {
-    name: string;
-    age: number;
-}
+const API_BASE_URL = 'https://api.example.com';
 
-export function processInput(input: InputData): void {
-    const { name, age } = input;
-    if (!validateInput(name, age)) {
-        throw new Error('Invalid input');
+export const fetchCryptoData = async (symbol: string): Promise<ApiResponse | ApiError> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/crypto/${symbol}`);
+        return response.data;
+    } catch (error) {
+        return { error: error.message };
     }
-    console.log(`Processing: ${name}, Age: ${age}`);
-}
+};
 
-export function mainLoop(inputs: InputData[]): void {
-    for (const input of inputs) {
-        try {
-            processInput(input);
-        } catch (error) {
-            console.error(`Error processing input: ${(error as Error).message}`);
-        }
+export const fetchMarketData = async (): Promise<ApiResponse | ApiError> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/market`);
+        return response.data;
+    } catch (error) {
+        return { error: error.message };
     }
-}
+};
+
+export const getHistoricalData = async (symbol: string, timeframe: string): Promise<ApiResponse | ApiError> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/historical/${symbol}`, { params: { timeframe } });
+        return response.data;
+    } catch (error) {
+        return { error: error.message };
+    }
+};
