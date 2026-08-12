@@ -1,37 +1,22 @@
-import { createLogger, transports, format } from 'winston';
-import { appendFileSync } from 'fs';
-import { join } from 'path';
-
-const logDirectory = join(__dirname, 'logs');
+import { createLogger, format, transports } from 'winston';
+import { DailyRotateFile } from 'winston-daily-rotate-file';
 
 const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        format.timestamp(),
-        format.printf(({ timestamp, level, message }) => {
-            return `${timestamp} ${level}: ${message}`;
-        })
-    ),
-    transports: [
-        new transports.Console(),
-        new transports.File({
-            filename: join(logDirectory, 'error.log'),
-            level: 'error',
-            maxsize: 5242880, // 5MB
-            maxFiles: '14d',
-            zippedArchive: true
-        }),
-        new transports.File({
-            filename: join(logDirectory, 'combined.log'),
-            maxsize: 5242880,
-            maxFiles: '14d',
-            zippedArchive: true
-        })
-    ]
+  level: 'info',
+  format: format.combine(
+    format.timestamp(),
+    format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} ${level}: ${message}`;
+    })
+  ),
+  transports: [
+    new DailyRotateFile({
+      filename: 'logs/%DATE%-results.log',
+      datePattern: 'YYYY-MM-DD',
+      delimiter: '-'
+    }),
+    new transports.Console(),
+  ],
 });
 
-const logUsage = () => {
-    appendFileSync(join(logDirectory, 'usage.log'), `${new Date().toISOString()} - Log accessed\n`);
-};
-
-export { logger, logUsage };
+export default logger;
