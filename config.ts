@@ -1,28 +1,37 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { createLogger, transports, format } from 'winston';
+import { appendFileSync } from 'fs';
+import { join } from 'path';
 
-interface Config {
-    host: string;
-    port: number;
-    apiKey: string;
-}
+const logDirectory = join(__dirname, 'logs');
 
-const defaultConfig: Config = {
-    host: 'localhost',
-    port: 3000,
-    apiKey: 'default-api-key',
+const logger = createLogger({
+    level: 'info',
+    format: format.combine(
+        format.timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+            return `${timestamp} ${level}: ${message}`;
+        })
+    ),
+    transports: [
+        new transports.Console(),
+        new transports.File({
+            filename: join(logDirectory, 'error.log'),
+            level: 'error',
+            maxsize: 5242880, // 5MB
+            maxFiles: '14d',
+            zippedArchive: true
+        }),
+        new transports.File({
+            filename: join(logDirectory, 'combined.log'),
+            maxsize: 5242880,
+            maxFiles: '14d',
+            zippedArchive: true
+        })
+    ]
+});
+
+const logUsage = () => {
+    appendFileSync(join(logDirectory, 'usage.log'), `${new Date().toISOString()} - Log accessed\n`);
 };
 
-const loadConfig = (filePath: string): Config => {
-    if (!fs.existsSync(filePath)) {
-        return defaultConfig;
-    }
-    const rawData = fs.readFileSync(filePath, 'utf-8');
-    const userConfig: Partial<Config> = JSON.parse(rawData);
-    return { ...defaultConfig, ...userConfig };
-};
-
-const configFilePath = path.resolve(__dirname, 'config.json');
-const configuration = loadConfig(configFilePath);
-
-export default configuration;
+export { logger, logUsage };
