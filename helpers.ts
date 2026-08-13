@@ -1,32 +1,29 @@
-type CryptoCurrency = { name: string; symbol: string; marketCap: number; price: number; };
+import axios from 'axios';
 
-type Transaction = { from: string; to: string; amount: number; timestamp: Date; };
+interface CryptoData {
+    symbol: string;
+    price: number;
+    changePercentage: number;
+}
 
-/**
- * Convert a number to a formatted currency string.
- * @param value - The number to format.
- * @param currency - The currency symbol.
- * @returns A formatted currency string.
- */
-const formatCurrency = (value: number, currency: string): string => {
-    return `${currency}${value.toFixed(2)}`;
+const API_URL = 'https://api.example.com/crypto';
+
+export const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
+    const response = await axios.get(`${API_URL}?symbols=${symbols.join(',')}`);
+    return response.data.map((item: any) => ({
+        symbol: item.symbol,
+        price: parseFloat(item.price),
+        changePercentage: parseFloat(item.changePercentage),
+    }));
 };
 
-/**
- * Calculate the market cap of a cryptocurrency.
- * @param crypto - The cryptocurrency object.
- * @returns The market cap in formatted string.
- */
-const calculateMarketCap = (crypto: CryptoCurrency): string => {
-    return formatCurrency(crypto.marketCap, '$');
+export const calculatePortfolioValue = (data: CryptoData[], holdings: Record<string, number>): number => {
+    return data.reduce((total, crypto) => {
+        const holding = holdings[crypto.symbol] || 0;
+        return total + (holding * crypto.price);
+    }, 0);
 };
 
-/**
- * Logs a transaction to the console.
- * @param transaction - The transaction object.
- */
-const logTransaction = (transaction: Transaction): void => {
-    console.log(`Transaction from ${transaction.from} to ${transaction.to} of amount ${transaction.amount} at ${transaction.timestamp}`);
+export const getTopPerformers = (data: CryptoData[], limit: number): CryptoData[] => {
+    return data.sort((a, b) => b.changePercentage - a.changePercentage).slice(0, limit);
 };
-
-export { formatCurrency, calculateMarketCap, logTransaction };
