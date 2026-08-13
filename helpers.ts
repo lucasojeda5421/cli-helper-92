@@ -1,33 +1,32 @@
-import axios from 'axios';
+type CryptoCurrency = { name: string; symbol: string; marketCap: number; price: number; };
 
-export async function fetchCryptoPrices(cryptoIds: string[]): Promise<{ [key: string]: number | null }> {
-    const prices: { [key: string]: number | null } = {};
-    const baseUrl = 'https://api.coingecko.com/api/v3/simple/price';
-    
-    try {
-        const response = await axios.get(baseUrl, { params: { ids: cryptoIds.join(','), vs_currencies: 'usd' } });
-        cryptoIds.forEach(id => {
-            prices[id] = response.data[id]?.usd || null;
-        });
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            console.error('Axios error:', error.message);
-        } else {
-            console.error('Unexpected error:', error);
-        }
-        cryptoIds.forEach(id => prices[id] = null);
-    }
-    return prices;
-}
+type Transaction = { from: string; to: string; amount: number; timestamp: Date; };
 
-export function validateCryptoIds(cryptoIds: string[]): string[] {
-    return cryptoIds.filter(id => typeof id === 'string' && id.length > 0);
-}
+/**
+ * Convert a number to a formatted currency string.
+ * @param value - The number to format.
+ * @param currency - The currency symbol.
+ * @returns A formatted currency string.
+ */
+const formatCurrency = (value: number, currency: string): string => {
+    return `${currency}${value.toFixed(2)}`;
+};
 
-export function handleFetchCryptoPrices(cryptoIds: string[]): Promise<{ [key: string]: number | null }> {
-    const validIds = validateCryptoIds(cryptoIds);
-    if (validIds.length === 0) {
-        throw new Error('No valid cryptocurrency IDs provided.');
-    }
-    return fetchCryptoPrices(validIds);
-}
+/**
+ * Calculate the market cap of a cryptocurrency.
+ * @param crypto - The cryptocurrency object.
+ * @returns The market cap in formatted string.
+ */
+const calculateMarketCap = (crypto: CryptoCurrency): string => {
+    return formatCurrency(crypto.marketCap, '$');
+};
+
+/**
+ * Logs a transaction to the console.
+ * @param transaction - The transaction object.
+ */
+const logTransaction = (transaction: Transaction): void => {
+    console.log(`Transaction from ${transaction.from} to ${transaction.to} of amount ${transaction.amount} at ${transaction.timestamp}`);
+};
+
+export { formatCurrency, calculateMarketCap, logTransaction };
