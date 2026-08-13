@@ -1,29 +1,29 @@
-import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
-interface CryptoData {
-    symbol: string;
-    price: number;
-    changePercentage: number;
+interface Config {
+  apiKey: string;
+  timeout: number;
+  retries: number;
 }
 
-const API_URL = 'https://api.example.com/crypto';
-
-export const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
-    const response = await axios.get(`${API_URL}?symbols=${symbols.join(',')}`);
-    return response.data.map((item: any) => ({
-        symbol: item.symbol,
-        price: parseFloat(item.price),
-        changePercentage: parseFloat(item.changePercentage),
-    }));
+const defaultConfig: Config = {
+  apiKey: '', // Must be set
+  timeout: 5000,
+  retries: 3,
 };
 
-export const calculatePortfolioValue = (data: CryptoData[], holdings: Record<string, number>): number => {
-    return data.reduce((total, crypto) => {
-        const holding = holdings[crypto.symbol] || 0;
-        return total + (holding * crypto.price);
-    }, 0);
+const loadConfig = (filePath: string): Config => {
+  const fullPath = path.resolve(filePath);
+  if (!fs.existsSync(fullPath)) return defaultConfig;
+  const fileContent = fs.readFileSync(fullPath, 'utf-8');
+  try {
+    const userConfig: Config = JSON.parse(fileContent);
+    return { ...defaultConfig, ...userConfig }; 
+  } catch (error) {
+    console.error('Error parsing config file:', error);
+    return defaultConfig;
+  }
 };
 
-export const getTopPerformers = (data: CryptoData[], limit: number): CryptoData[] => {
-    return data.sort((a, b) => b.changePercentage - a.changePercentage).slice(0, limit);
-};
+export { loadConfig };
