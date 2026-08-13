@@ -1,29 +1,26 @@
-import fs from 'fs';
-import path from 'path';
+import axios from 'axios';
 
-interface Config {
-  apiKey: string;
-  timeout: number;
-  retries: number;
+export interface CryptoPrice {
+    symbol: string;
+    price: number;
 }
 
-const defaultConfig: Config = {
-  apiKey: '', // Must be set
-  timeout: 5000,
-  retries: 3,
-};
+export async function fetchCryptoPrices(symbols: string[]): Promise<CryptoPrice[]> {
+    const response = await axios.get(`https://api.example.com/prices?symbols=${symbols.join(',')}`);
+    const prices = response.data;
+    return symbols.map((symbol) => ({
+        symbol,
+        price: prices[symbol],
+    }));
+}
 
-const loadConfig = (filePath: string): Config => {
-  const fullPath = path.resolve(filePath);
-  if (!fs.existsSync(fullPath)) return defaultConfig;
-  const fileContent = fs.readFileSync(fullPath, 'utf-8');
-  try {
-    const userConfig: Config = JSON.parse(fileContent);
-    return { ...defaultConfig, ...userConfig }; 
-  } catch (error) {
-    console.error('Error parsing config file:', error);
-    return defaultConfig;
-  }
-};
+export function formatPrice(price: number): string {
+    return `$${price.toFixed(2)}`;
+}
 
-export { loadConfig };
+export function calculatePortfolioValue(prices: CryptoPrice[], quantities: { [key: string]: number }): number {
+    return prices.reduce((total, { symbol, price }) => {
+        const quantity = quantities[symbol] || 0;
+        return total + price * quantity;
+    }, 0);
+}
