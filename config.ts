@@ -1,22 +1,28 @@
-import { createLogger, format, transports } from 'winston';
-import { DailyRotateFile } from 'winston-daily-rotate-file';
+import * as fs from 'fs';
+import * as path from 'path';
 
-const logger = createLogger({
-  level: 'info',
-  format: format.combine(
-    format.timestamp(),
-    format.printf(({ timestamp, level, message }) => {
-      return `${timestamp} ${level}: ${message}`;
-    })
-  ),
-  transports: [
-    new DailyRotateFile({
-      filename: 'logs/%DATE%-results.log',
-      datePattern: 'YYYY-MM-DD',
-      delimiter: '-'
-    }),
-    new transports.Console(),
-  ],
-});
+type Config = {  
+    apiKey: string;
+    apiSecret: string;
+    timeout: number;
+};
 
-export default logger;
+const defaultConfig: Config = {  
+    apiKey: '',  
+    apiSecret: '',  
+    timeout: 5000,
+};
+
+const loadConfig = (configPath: string): Config => {  
+    try {  
+        const fullPath = path.resolve(configPath);
+        const data = fs.readFileSync(fullPath, 'utf-8');  
+        const userConfig: Partial<Config> = JSON.parse(data);  
+        return { ...defaultConfig, ...userConfig };  
+    } catch (error) {  
+        console.warn('Could not load config. Using defaults.');  
+        return defaultConfig;  
+    }
+};
+
+export default loadConfig;
