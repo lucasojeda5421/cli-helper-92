@@ -1,26 +1,39 @@
-import axios from 'axios';
+import { isAddress } from 'ethers';
+import { request } from 'http';
 
-export interface CryptoPrice {
-    symbol: string;
-    price: number;
-}
+export const validateInput = (address: string): boolean => {
+    return isAddress(address);
+};
 
-export async function fetchCryptoPrices(symbols: string[]): Promise<CryptoPrice[]> {
-    const response = await axios.get(`https://api.example.com/prices?symbols=${symbols.join(',')}`);
-    const prices = response.data;
-    return symbols.map((symbol) => ({
-        symbol,
-        price: prices[symbol],
-    }));
-}
+export const fetchData = (address: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        if (!validateInput(address)) {
+            reject(new Error('Invalid address'));
+            return;
+        }
+        request(`https://api.crypto.com/v1/address/${address}`, response => {
+            let data = '';
+            response.on('data', chunk => {
+                data += chunk;
+            });
+            response.on('end', () => {
+                resolve(JSON.parse(data));
+            });
+        }).on('error', err => {
+            reject(err);
+        }).end();
+    });
+};
 
-export function formatPrice(price: number): string {
-    return `$${price.toFixed(2)}`;
-}
-
-export function calculatePortfolioValue(prices: CryptoPrice[], quantities: { [key: string]: number }): number {
-    return prices.reduce((total, { symbol, price }) => {
-        const quantity = quantities[symbol] || 0;
-        return total + price * quantity;
-    }, 0);
-}
+export const processAddresses = async (addresses: string[]) => {
+    const results = [];
+    for (const address of addresses) {
+        try {
+            const data = await fetchData(address);
+            results.push(data);
+        } catch (error) {
+            console.error(`Error fetching data for ${address}:`, error.message);
+        }
+    }
+    return results;
+};
