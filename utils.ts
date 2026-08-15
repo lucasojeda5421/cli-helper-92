@@ -1,35 +1,45 @@
-import axios, { AxiosRequestConfig } from 'axios';
+type ErrorType = 'NETWORK' | 'VALIDATION' | 'UNKNOWN';
 
-type RetryOptions = {
-    retries: number;
-    factor?: number;
-    minTimeout?: number;
-};
+interface CustomError extends Error {
+    type: ErrorType;
+}
 
-const defaultRetryOptions: RetryOptions = {
-    retries: 5,
-    factor: 2,
-    minTimeout: 1000,
-};
+function handleNetworkError(message: string): CustomError {
+    return { name: 'NetworkError', message, type: 'NETWORK' };
+}
 
-const retry = async <T>(
-    fn: () => Promise<T>,
-    options: RetryOptions = defaultRetryOptions
-): Promise<T> => {
-    const { retries, factor, minTimeout } = options;
-    let attempt = 0;
+function handleValidationError(message: string): CustomError {
+    return { name: 'ValidationError', message, type: 'VALIDATION' };
+}
 
-    while (attempt < retries) {
-        try {
-            return await fn();
-        } catch (error) {
-            attempt++;
-            if (attempt >= retries) throw error;
-            const timeout = minTimeout ? minTimeout * Math.pow(factor || 2, attempt - 1) : 1000;
-            await new Promise(res => setTimeout(res, timeout));
+function handleUnknownError(message: string): CustomError {
+    return { name: 'UnknownError', message, type: 'UNKNOWN' };
+}
+
+function processTransaction(transaction: any): void {
+    try {
+        if (!transaction.amount || transaction.amount <= 0) {
+            throw handleValidationError('Invalid amount specified.');
+        }
+        if (!transaction.recipient) {
+            throw handleValidationError('Recipient address is missing.');
+        }
+        // Simulating network call
+        const success = Math.random() > 0.2;
+        if (!success) {
+            throw handleNetworkError('Failed to process transaction due to network issue.');
+        }
+        console.log('Transaction processed successfully.');
+    } catch (error) {
+        if (error.type) {
+            console.error(
+                `${error.name}: ${error.message} (Type: ${error.type})`
+            );
+        } else {
+            const unknownError = handleUnknownError('An unexpected error occurred.');
+            console.error(`${unknownError.name}: ${unknownError.message}`);
         }
     }
-    throw new Error('Max retries exceeded');
-};
+}
 
-export { retry };
+export { processTransaction };
