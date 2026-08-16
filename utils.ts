@@ -1,45 +1,28 @@
-type ErrorType = 'NETWORK' | 'VALIDATION' | 'UNKNOWN';
+import fetch from 'node-fetch';
 
-interface CustomError extends Error {
-    type: ErrorType;
-}
-
-function handleNetworkError(message: string): CustomError {
-    return { name: 'NetworkError', message, type: 'NETWORK' };
-}
-
-function handleValidationError(message: string): CustomError {
-    return { name: 'ValidationError', message, type: 'VALIDATION' };
-}
-
-function handleUnknownError(message: string): CustomError {
-    return { name: 'UnknownError', message, type: 'UNKNOWN' };
-}
-
-function processTransaction(transaction: any): void {
+export async function fetchData(url: string): Promise<any> {
     try {
-        if (!transaction.amount || transaction.amount <= 0) {
-            throw handleValidationError('Invalid amount specified.');
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        if (!transaction.recipient) {
-            throw handleValidationError('Recipient address is missing.');
-        }
-        // Simulating network call
-        const success = Math.random() > 0.2;
-        if (!success) {
-            throw handleNetworkError('Failed to process transaction due to network issue.');
-        }
-        console.log('Transaction processed successfully.');
+        return await response.json();
     } catch (error) {
-        if (error.type) {
-            console.error(
-                `${error.name}: ${error.message} (Type: ${error.type})`
-            );
-        } else {
-            const unknownError = handleUnknownError('An unexpected error occurred.');
-            console.error(`${unknownError.name}: ${unknownError.message}`);
-        }
+        console.error('Fetch error:', error);
+        throw new Error('Failed to fetch data');
     }
 }
 
-export { processTransaction };
+export function validateAddress(address: string): boolean {
+    const addressPattern = /^0x[a-fA-F0-9]{40}$/;
+    return addressPattern.test(address);
+}
+
+export function handleError(error: Error): void {
+    console.error('Error:', error.message);
+    // Additional error handling logic can be implemented here
+}
+
+export function isNetworkError(error: Error): boolean {
+    return error.message.includes('network');
+}
