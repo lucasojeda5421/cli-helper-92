@@ -1,28 +1,17 @@
-import fetch from 'node-fetch';
+import axios, { AxiosRequestConfig } from 'axios';
 
-export async function fetchData(url: string): Promise<any> {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+async function retry<T>(fn: () => Promise<T>, retries: number, delay: number): Promise<T> {
+    let attempt = 0;
+    while (attempt < retries) {
+        try {
+            return await fn();
+        } catch (error) {
+            attempt++;
+            if (attempt === retries) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
-        return await response.json();
-    } catch (error) {
-        console.error('Fetch error:', error);
-        throw new Error('Failed to fetch data');
     }
+    throw new Error('Max retry attempts reached');
 }
 
-export function validateAddress(address: string): boolean {
-    const addressPattern = /^0x[a-fA-F0-9]{40}$/;
-    return addressPattern.test(address);
-}
-
-export function handleError(error: Error): void {
-    console.error('Error:', error.message);
-    // Additional error handling logic can be implemented here
-}
-
-export function isNetworkError(error: Error): boolean {
-    return error.message.includes('network');
-}
+export { retry };
