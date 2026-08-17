@@ -1,30 +1,28 @@
-import { createLogger, format, transports } from 'winston';
-import { timestamp } from 'winston-timestamp';
+import axios from 'axios';
+import { createError } from './utils';
 
-const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        timestamp(),
-        format.printf(({ timestamp, level, message }) => {
-            return `${timestamp} [${level}]: ${message}`;
-        })
-    ),
-    transports: [
-        new transports.Console(),
-        new transports.File({
-            filename: 'application.log',
-            maxSize: '20m',
-            maxFiles: '14d'
-        })
-    ]
-});
+export const fetchCryptoData = async (url: string): Promise<any> => {
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            return createError(`Network error: ${error.message}`);
+        }
+        return createError('An unknown error occurred');
+    }
+};
 
-export function logInfo(message: string) {
-    logger.info(message);
-}
+export const validateCryptoSymbol = (symbol: string): boolean => {
+    const regex = /^[A-Z]{1,5}$/;
+    return regex.test(symbol);
+};
 
-export function logError(message: string) {
-    logger.error(message);
-}
-
-export default logger;
+export const getCryptoPrice = async (symbol: string): Promise<number | null> => {
+    if (!validateCryptoSymbol(symbol)) {
+        throw new Error('Invalid crypto symbol');
+    }
+    const url = `https://api.crypto.com/v1/prices/${symbol}`;
+    const data = await fetchCryptoData(url);
+    return data ? data.lastPrice : null;
+};
