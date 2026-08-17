@@ -1,17 +1,18 @@
-import axios, { AxiosRequestConfig } from 'axios';
-
-async function retry<T>(fn: () => Promise<T>, retries: number, delay: number): Promise<T> {
-    let attempt = 0;
-    while (attempt < retries) {
+export async function retry<T>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> {
+    for (let i = 0; i < retries; i++) {
         try {
             return await fn();
         } catch (error) {
-            attempt++;
-            if (attempt === retries) throw error;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            if (i === retries - 1) throw error;
+            await new Promise(res => setTimeout(res, delay));
         }
     }
-    throw new Error('Max retry attempts reached');
 }
 
-export { retry };
+export function fetchWithRetry(url: string): Promise<any> {
+    return retry(async () => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    });
+}
