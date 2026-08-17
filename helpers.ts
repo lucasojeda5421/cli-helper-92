@@ -1,29 +1,30 @@
-import { createLogger, transports, format } from 'winston';
-import { Logger } from 'winston';
+import { createLogger, format, transports } from 'winston';
+import { timestamp } from 'winston-timestamp';
 
-const logFormat = format.combine(
-    format.timestamp(),
-    format.printf(({ timestamp, level, message }) => {
-        return `${timestamp} ${level}: ${message}`;
-    })
-);
+const logger = createLogger({
+    level: 'info',
+    format: format.combine(
+        timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+            return `${timestamp} [${level}]: ${message}`;
+        })
+    ),
+    transports: [
+        new transports.Console(),
+        new transports.File({
+            filename: 'application.log',
+            maxSize: '20m',
+            maxFiles: '14d'
+        })
+    ]
+});
 
-const createRotatingLogger = (): Logger => {
-    return createLogger({
-        level: 'info',
-        format: logFormat,
-        transports: [
-            new transports.Console(),
-            new transports.File({
-                filename: 'logs/combined.log',
-                maxsize: 1024 * 1024 * 5,
-                maxFiles: '5d',
-                tailable: true,
-            })
-        ],
-    });
-};
+export function logInfo(message: string) {
+    logger.info(message);
+}
 
-const logger = createRotatingLogger();
+export function logError(message: string) {
+    logger.error(message);
+}
 
 export default logger;
