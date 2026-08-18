@@ -1,27 +1,20 @@
-import { createLogger, format, transports } from 'winston';
-import { rotate } from 'winston-daily-rotate-file';
+import axios, { AxiosRequestConfig } from 'axios';
 
-const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        format.timestamp(),
-        format.json()
-    ),
-    transports: [
-        new rotate({
-            filename: 'logs/%DATE%-results.log',
-            datePattern: 'YYYY-MM-DD',
-            zippedArchive: true,
-            maxSize: '20m',
-            maxFiles: '14d'
-        }),
-        new transports.Console({
-            format: format.combine(
-                format.colorize(),
-                format.simple()
-            )
-        })
-    ]
-});
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
-export default logger;
+async function retryRequest(config: AxiosRequestConfig, retries: number = MAX_RETRIES): Promise<any> {
+    try {
+        const response = await axios(config);
+        return response.data;
+    } catch (error) {
+        if (retries > 0) {
+            await new Promise(r => setTimeout(r, RETRY_DELAY));
+            return retryRequest(config, retries - 1);
+        } else {
+            throw error;
+        }
+    }
+}
+
+export { retryRequest };
