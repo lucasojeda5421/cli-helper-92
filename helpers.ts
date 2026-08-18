@@ -1,28 +1,28 @@
-import axios from 'axios';
-import { createError } from './utils';
+import fs from 'fs';
+import path from 'path';
 
-export const fetchCryptoData = async (url: string): Promise<any> => {
-    try {
-        const response = await axios.get(url);
-        return response.data;
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            return createError(`Network error: ${error.message}`);
-        }
-        return createError('An unknown error occurred');
-    }
+interface Config {
+  apiKey: string;
+  timeout: number;
+  retries: number;
+}
+
+const defaultConfig: Config = {
+  apiKey: 'default_api_key',
+  timeout: 5000,
+  retries: 3,
 };
 
-export const validateCryptoSymbol = (symbol: string): boolean => {
-    const regex = /^[A-Z]{1,5}$/;
-    return regex.test(symbol);
-};
+function loadConfig(configPath: string): Config {
+  let userConfig: Partial<Config> = {};
+  try {
+    const configFilePath = path.resolve(configPath);
+    const fileContent = fs.readFileSync(configFilePath, 'utf-8');
+    userConfig = JSON.parse(fileContent);
+  } catch (error) {
+    console.error('Failed to load configuration:', error);
+  }
+  return { ...defaultConfig, ...userConfig };
+}
 
-export const getCryptoPrice = async (symbol: string): Promise<number | null> => {
-    if (!validateCryptoSymbol(symbol)) {
-        throw new Error('Invalid crypto symbol');
-    }
-    const url = `https://api.crypto.com/v1/prices/${symbol}`;
-    const data = await fetchCryptoData(url);
-    return data ? data.lastPrice : null;
-};
+export { loadConfig };
