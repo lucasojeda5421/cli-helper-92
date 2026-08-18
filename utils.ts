@@ -1,18 +1,14 @@
-export async function retry<T>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> {
-    for (let i = 0; i < retries; i++) {
-        try {
-            return await fn();
-        } catch (error) {
-            if (i === retries - 1) throw error;
-            await new Promise(res => setTimeout(res, delay));
-        }
-    }
-}
+type CryptoData = { symbol: string; price: number; timestamp: Date; };
 
-export function fetchWithRetry(url: string): Promise<any> {
-    return retry(async () => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
-    });
-}
+const fetchCryptoData = async (symbol: string): Promise<CryptoData> => {
+    const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`);
+    const data = await response.json();
+    const price = data[symbol].usd;
+    return { symbol, price, timestamp: new Date() };
+};
+
+const formatCryptoData = (data: CryptoData): string => {
+    return `Symbol: ${data.symbol}, Price: $${data.price.toFixed(2)}, Time: ${data.timestamp.toISOString()}`;
+};
+
+export { fetchCryptoData, formatCryptoData, CryptoData };
