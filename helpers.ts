@@ -1,1 +1,25 @@
-type CryptoData = { id: string; name: string; price: number; marketCap: number; volum24h: number; }; class ApiError extends Error { constructor(message: string) { super(message); this.name = 'ApiError'; } } const fetchCryptoData = async (apiUrl: string): Promise<CryptoData[]> => { try { const response = await fetch(apiUrl); if (!response.ok) throw new ApiError('Network response was not ok'); const data: CryptoData[] = await response.json(); return data; } catch (error) { if (error instanceof ApiError) { console.error('API Error: ', error.message); } else { console.error('Fetch error: ', error); } throw error; } };
+import { BigNumber } from 'bignumber.js';
+
+const PRECISION = 1e18;
+
+export const calculatePriceImpact = (inputAmount: number, outputAmount: number): number => {
+    if (inputAmount <= 0 || outputAmount <= 0) return 0;
+    const impact = (inputAmount / (outputAmount + inputAmount)) * 100;
+    return parseFloat(impact.toFixed(2));
+};
+
+export const optimizedTransactionFee = (baseFee: number, multiplier: number): number => {
+    return BigNumber(baseFee)
+        .multipliedBy(multiplier)
+        .toNumber();
+};
+
+export const normalizeAmount = (amount: number): string => {
+    return BigNumber(amount)
+        .div(PRECISION)
+        .toString();
+};
+
+export const toBigNumber = (value: number | string): BigNumber => {
+    return BigNumber(value);
+};
