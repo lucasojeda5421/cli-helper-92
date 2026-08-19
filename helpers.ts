@@ -1,28 +1,26 @@
-import fs from 'fs';
-import path from 'path';
+import * as winston from 'winston';
+import 'winston-daily-rotate-file';
 
-interface Config {
-  apiKey: string;
-  timeout: number;
-  retries: number;
-}
+const transport = new winston.transports.DailyRotateFile({
+  filename: '%DATE%.log',
+  datePattern: 'YYYY-MM-DD',
+  directory: './logs',
+  zippedArchive: true,
+  maxSize: '20m',
+  maxFiles: '14d',
+  level: 'info'
+});
 
-const defaultConfig: Config = {
-  apiKey: 'default_api_key',
-  timeout: 5000,
-  retries: 3,
-};
+const logger = winston.createLogger({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [transport],
+});
 
-function loadConfig(configPath: string): Config {
-  let userConfig: Partial<Config> = {};
-  try {
-    const configFilePath = path.resolve(configPath);
-    const fileContent = fs.readFileSync(configFilePath, 'utf-8');
-    userConfig = JSON.parse(fileContent);
-  } catch (error) {
-    console.error('Failed to load configuration:', error);
-  }
-  return { ...defaultConfig, ...userConfig };
-}
+export default logger;
 
-export { loadConfig };
+// Usage example:
+// logger.info('Some information about crypto processing');
+// logger.error('An error occurred');
