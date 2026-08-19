@@ -1,28 +1,27 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { readFileSync } from 'fs';
 
 interface Config {
-    apiKey: string;
-    apiSecret: string;
-    baseUrl: string;
+  apiUrl: string;
+  timeout: number;
 }
 
-const defaultConfig: Config = {
-    apiKey: 'default_api_key',
-    apiSecret: 'default_api_secret',
-    baseUrl: 'https://api.default.com',
+const loadConfig = (filePath: string): Config => {
+  try {
+    const data = readFileSync(filePath, 'utf8');
+    const config = JSON.parse(data);
+
+    if (!config.apiUrl || typeof config.apiUrl !== 'string') {
+      throw new Error('Invalid or missing apiUrl in config');
+    }
+    if (!config.timeout || typeof config.timeout !== 'number') {
+      throw new Error('Invalid or missing timeout in config');
+    }
+
+    return { apiUrl: config.apiUrl, timeout: config.timeout };
+  } catch (error) {
+    console.error(`Error loading config: ${error.message}`);
+    process.exit(1);
+  }
 };
 
-function loadConfig(configPath: string): Config {
-    const fullPath = path.resolve(configPath);
-    if (fs.existsSync(fullPath)) {
-        const rawConfig = fs.readFileSync(fullPath, 'utf-8');
-        return { 
-            ...defaultConfig, 
-            ...JSON.parse(rawConfig), 
-        };
-    }
-    return defaultConfig;
-}
-
-export { loadConfig, Config };
+export default loadConfig;
