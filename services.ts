@@ -1,43 +1,40 @@
-import { createHash } from 'crypto';
-
-interface CacheItem<T> {
-  value: T;
-  expiry: number;
+export interface RetryOptions {
+  retries?: number;
+  delayMs?: number;
+  backoffFactor?: number;
 }
 
-export class CryptoServiceCache {
-  private cache = new Map<string, CacheItem<any>>();
-  private readonly ttl: number;
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const retries = options.retries ?? 3;
+  const delayMs = options.delayMs ?? 1000;
+  const backoffFactor = options.backoffFactor ?? 2;
 
-  constructor(ttlMs: number = 5000) {
-    this.ttl = ttlMs;
-  }
+  let attempt = 0;
+  let currentDelay = delayMs;
 
-  private hashKey(data: Record<string, unknown>): string {
-    return createHash('sha256').update(JSON.stringify(data)).digest('hex');
-  }
-
-  public get<T>(params: Record<string, unknown>): T | null {
-    const key = this.hashKey(params);
-    const item = this.cache.get(key);
-    
-    if (!item) return null;
-    
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
-      return null;
+  while (true) {
+    try {
+      return await operation();
+    } catch (error) {
+      attempt++;
+      if (attempt >= retries) {
+        throw new Error(`Operation failed after ${retries} attempts: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, currentDelay));
+      currentDelay *= backoffFactor;
     }
-    
-    return item.value as T;
   }
+}
 
-  public set<T>(params: Record<string, unknown>, value: T): void {
-    const key = this.hashKey(params);
-    const expiry = Date.now() + this.ttl;
-    this.cache.set(key, { value, expiry });
-  }
-
-  public clear(): void {
-    this.cache.clear();
-  }
+export async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+  return withRetry(async () => {
+    const response = await fetch(url, init);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response;
+  });
 }
