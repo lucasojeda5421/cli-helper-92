@@ -1,23 +1,43 @@
-import axios from 'axios';
+import { createHash } from 'crypto';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
-
-async function fetchWithRetry(url: string): Promise<any> {
-    let attempt = 0;
-    while (attempt < MAX_RETRIES) {
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (error) {
-            if (attempt < MAX_RETRIES - 1) {
-                attempt++;
-                await new Promise(res => setTimeout(res, RETRY_DELAY));
-            } else {
-                throw error;
-            }
-        }
-    }
+interface CacheItem<T> {
+  value: T;
+  expiry: number;
 }
 
-export { fetchWithRetry };
+export class CryptoServiceCache {
+  private cache = new Map<string, CacheItem<any>>();
+  private readonly ttl: number;
+
+  constructor(ttlMs: number = 5000) {
+    this.ttl = ttlMs;
+  }
+
+  private hashKey(data: Record<string, unknown>): string {
+    return createHash('sha256').update(JSON.stringify(data)).digest('hex');
+  }
+
+  public get<T>(params: Record<string, unknown>): T | null {
+    const key = this.hashKey(params);
+    const item = this.cache.get(key);
+    
+    if (!item) return null;
+    
+    if (Date.now() > item.expiry) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.value as T;
+  }
+
+  public set<T>(params: Record<string, unknown>, value: T): void {
+    const key = this.hashKey(params);
+    const expiry = Date.now() + this.ttl;
+    this.cache.set(key, { value, expiry });
+  }
+
+  public clear(): void {
+    this.cache.clear();
+  }
+}
