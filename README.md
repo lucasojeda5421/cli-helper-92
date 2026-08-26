@@ -1,37 +1,62 @@
 # cli-helper-92
 
-`cli-helper-92` is a powerful command-line interface utility built with TypeScript designed to streamline various development workflows. With a focus on performance and ease of use, this tool helps developers automate repetitive tasks and improve efficiency.
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
+
+`cli-helper-92` is a high-performance command-line interface designed to streamline crypto portfolio tracking and smart contract interaction. It provides developers and traders with instant terminal access to decentralized exchange liquidity pools, gas estimations, and wallet balances without switching contexts.
 
 ## Features
 
-- **File Manipulation**: Easily copy, move, and delete files and directories through simple commands, allowing quick organization of projects.
-- **Environment Variable Management**: Manage and set environment variables seamlessly, ensuring configurations are always suited for the current environment.
-- **User-friendly Command Structure**: Designed with a clear and intuitive syntax, enabling users to execute commands without a steep learning curve.
-- **Plugin System**: Extend functionality with custom plugins, allowing users to tailor the CLI to fit specific project needs.
+- **Multi-Chain Wallet Tracking:** Monitor ETH, Polygon, and Arbitrum wallet balances and recent transactions natively from your terminal.
+- **Real-Time Gas Oracle:** Fetch optimized gas fees across multiple networks instantly to execute timely transactions with minimal slippage.
+- **DEX Price Aggregator:** Query live token swap rates and liquidity data from Uniswap V3 and Sushiswap directly via RPC endpoints.
+- **Secure Key Management:** Encrypt and store private keys locally using AES-256-GCM encryption with seamless environment variable fallback.
 
 ## Installation
 
-To get started with `cli-helper-92`, you can install it globally using npm:
+Ensure you have Node.js version 18 or higher installed on your system. Install the CLI globally using npm:
 
 ```bash
 npm install -g cli-helper-92
 ```
 
-## Basic Usage
-
-Once installed, you can run `cli-helper-92` from your terminal. Here’s a quick example to demonstrate how to copy a file from one directory to another:
+Alternatively, run it on-the-fly via npx:
 
 ```bash
-cli-helper-92 copy ./source/example.txt ./destination/
+npx cli-helper-92 --version
 ```
 
-This command will copy `example.txt` from the `source` folder into the `destination` folder, making it easy to manage file structures directly from the command line.
+## Usage
 
-For more advanced usage, including setting environment variables and creating plugins, refer to the [documentation](https://github.com/your-username/cli-helper-92/blob/main/docs/USAGE.md).
+Initialize your configuration file and set up your default RPC provider:
+
+```bash
+cli-helper-92 init
+```
+
+Check the native token balance of a specific Ethereum address:
+
+```bash
+cli-helper-92 balance 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --network mainnet
+```
+
+Estimate current gas fees for a priority transaction:
+
+```bash
+cli-helper-92 gas --network arbitrum
+```
+
+For a complete list of available commands and global flags, run:
+
+```bash
+cli-helper-92 --help
+```
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any bug fixes or feature additions.
 
 ## License
 
-![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)  
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/your-username/cli-helper-92/blob/main/LICENSE) file for details.
-
-We welcome contributions and feedback! Check the issues tab for any bugs or feature requests, and feel free to submit a pull request. Happy coding!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
