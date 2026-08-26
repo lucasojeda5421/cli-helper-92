@@ -1,24 +1,42 @@
-export interface CryptoInput {
-    amount: number;
-    currency: string;
+export type NetworkType = 'mainnet' | 'testnet' | 'devnet';
+
+export interface WalletConfig {
+  readonly address: string;
+  readonly derivationPath: string;
+  network: NetworkType;
 }
 
-export function validateInput(input: CryptoInput): boolean {
-    if (input.amount <= 0) {
-        throw new Error('Amount must be greater than zero');
-    }
-    const validCurrencies = ['BTC', 'ETH', 'LTC'];
-    if (!validCurrencies.includes(input.currency)) {
-        throw new Error('Invalid currency type');
-    }
-    return true;
+export interface TransactionPayload {
+  readonly recipient: string;
+  readonly amount: bigint;
+  readonly fee: bigint;
+  memo?: string;
 }
 
-export function processTransaction(input: CryptoInput) {
-    try {
-        validateInput(input);
-        // Proceed with transaction logic
-    } catch (error) {
-        console.error(error.message);
-    }
+export interface SignedTransaction extends TransactionPayload {
+  readonly signature: string;
+  readonly txHash: string;
+  readonly timestamp: number;
+}
+
+export type GasEstimate = {
+  limit: bigint;
+  price: bigint;
+};
+
+/**
+ * Validates a cryptographic address format.
+ */
+export function isValidAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+/**
+ * Converts atomic units to standard coin representation.
+ */
+export function formatUnits(amount: bigint, decimals: number = 18): string {
+  const divisor = 10n ** BigInt(decimals);
+  const integerPart = amount / divisor;
+  const fractionalPart = amount % divisor;
+  return `${integerPart}.${fractionalPart.toString().padStart(decimals, '0')}`;
 }
