@@ -1,79 +1,59 @@
-export interface CryptoConfig {
-  apiKey: string;
-  apiSecret: string;
-  exchange: 'binance' | 'coinbase' | 'kraken';
-  network: 'mainnet' | 'testnet';
-  timeout: number;
-  maxRetries: number;
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface LogRotator {
+  write(level: string, message: string): void;
 }
 
-export interface WalletConfig {
-  address: string;
-  privateKey: string;
-  chainId: number;
-}
-
-/**
- * Main configuration for the CLI crypto helper
- */
-export class ConfigManager {
-  private cryptoConfig: CryptoConfig;
-  private walletConfig: WalletConfig | null;
-
-  /**
-   * Initializes the config manager with provided configurations
-   * @param cryptoConfig Configuration for crypto API access
-   * @param walletConfig Optional wallet configuration
-   */
-  constructor(cryptoConfig: CryptoConfig, walletConfig?: WalletConfig) {
-    this.cryptoConfig = cryptoConfig;
-    this.walletConfig = walletConfig || null;
-  }
-
-  /**
-   * Retrieves the crypto configuration
-   * @returns The current crypto config
-   */
-  getCryptoConfig(): CryptoConfig {
-    return { ...this.cryptoConfig };
-  }
-
-  /**
-   * Retrieves the wallet configuration if available
-   * @returns The wallet config or null
-   */
-  getWalletConfig(): WalletConfig | null {
-    return this.walletConfig ? { ...this.walletConfig } : null;
-  }
-
-  /**
-   * Updates the timeout setting in crypto config
-   * @param timeout New timeout value in milliseconds
-   */
-  setTimeout(timeout: number): void {
-    if (timeout > 0) {
-      this.cryptoConfig.timeout = timeout;
+class RotatingFileLogger implements LogRotator {
+  private logPath: string;
+  private maxSize: number;
+  private maxFiles: number;
+  private currentSize: number;
+  constructor(logDir: string, maxSize: number = 10485760, maxFiles: number = 5) {
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
     }
+    this.logPath = path.join(logDir, 'app.log');
+    this.maxSize = maxSize;
+    this.maxFiles = maxFiles;
+    this.currentSize = fs.existsSync(this.logPath) ? fs.statSync(this.logPath).size : 0;
   }
-
-  /**
-   * Checks if the configuration is valid for operations
-   * @returns Boolean indicating validity
-   */
-  isValid(): boolean {
-    const { apiKey, apiSecret, timeout, maxRetries } = this.cryptoConfig;
-    return apiKey.length > 10 && apiSecret.length > 10 && timeout >= 1000 && maxRetries > 0;
+  write(level: string, message: string): void {
+    const timestamp = new Date().toISOString();
+    const entry = `${timestamp} [${level.toUpperCase()}] ${message}\n`;
+    const entrySize = Buffer.byteLength(entry);
+    if (this.currentSize + entrySize > this.maxSize) {
+      this.rotate();
+    }
+    fs.appendFileSync(this.logPath, entry);
+    this.currentSize += entrySize;
   }
-
-  /**
-   * Returns a summary of the current configuration
-   * @returns Object with key config details
-   */
-  getSummary(): { exchange: string; network: string; hasWallet: boolean } {
-    return {
-      exchange: this.cryptoConfig.exchange,
-      network: this.cryptoConfig.network,
-      hasWallet: this.walletConfig !== null
-    };
+  private rotate(): void {
+    for (let i = this.maxFiles - 1; i >= 1; i--) {
+      const oldPath = `${this.logPath}.${i}`;
+      const newPath = `${this.logPath}.${i + 1}`;
+      if (fs.existsSync(oldPath)) {
+        fs.renameSync(oldPath, newPath);
+      }
+    }
+    if (fs.existsSync(this.logPath)) {
+      fs.renameSync(this.logPath, `${this.logPath}.1`);
+    }
+    this.currentSize = 0;
   }
 }
+
+const logDir = path.join(process.cwd(), 'logs');
+const loggerInstance = new RotatingFileLogger(logDir);
+export const logger = {
+  info(message: string): void {
+    loggerInstance.write('info', message);
+  },
+  error(message: string): void {
+    loggerInstance.write('error', message);
+  },
+  warn(message: string): void {
+    loggerInstance.write('warn', message);
+  }
+};
