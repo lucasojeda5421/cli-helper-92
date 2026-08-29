@@ -1,50 +1,27 @@
-export interface TransactionInput {
+interface TransactionInput {
   address: string;
   amount: number;
   currency: string;
 }
 
-function validateAddress(address: string): boolean {
-  if (typeof address !== 'string' || address.length < 10) {
-    return false;
-  }
-  return /^[a-zA-Z0-9]{10,}$/.test(address);
-}
+const isValidAddress = (address: string): boolean => address.startsWith("0x") && address.length === 42;
+const isValidAmount = (amount: number): boolean => amount > 0 && amount <= 1000000000;
+const isValidCurrency = (currency: string): boolean => ["BTC", "ETH", "SOL"].includes(currency);
 
-function validateAmount(amount: number): boolean {
-  return typeof amount === 'number' && amount > 0 && Number.isFinite(amount);
-}
+const validateInput = (input: TransactionInput): boolean => {
+  return isValidAddress(input.address) && isValidAmount(input.amount) && isValidCurrency(input.currency);
+};
 
-function validateCurrency(currency: string): boolean {
-  const valid = ['BTC', 'ETH', 'USDT'];
-  return typeof currency === 'string' && valid.includes(currency.toUpperCase());
-}
-
-export function validateInput(input: TransactionInput): boolean {
-  if (!input || typeof input !== 'object') {
-    return false;
-  }
-  return validateAddress(input.address) && validateAmount(input.amount) && validateCurrency(input.currency);
-}
-
-export class CryptoService {
-  private queue: TransactionInput[] = [];
-  enqueue(input: TransactionInput): boolean {
-    if (!validateInput(input)) {
-      return false;
-    }
-    this.queue.push(input);
-    return true;
-  }
-  processAll(): void {
-    let i = 0;
-    while (i < this.queue.length) {
-      const input = this.queue[i];
+export class CryptoProcessingService {
+  process(inputs: TransactionInput[]) {
+    const results = [];
+    for (const input of inputs) {
       if (validateInput(input)) {
-        console.log('Processing transaction:', input);
+        results.push({ status: "success", txId: "tx_" + Date.now(), ...input });
+      } else {
+        results.push({ status: "invalid", input });
       }
-      i++;
     }
-    this.queue = [];
+    return results;
   }
 }
