@@ -1,37 +1,40 @@
-export interface CryptoInput {
-  type: 'address' | 'transaction' | 'amount';
-  value: string;
+export interface NetworkOperation<T> {
+  (): Promise<T>;
 }
-function isValidAddress(value: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(value);
+export interface RetryConfig {
+  maxAttempts: number;
+  baseDelay: number;
 }
-function isValidTransaction(value: string): boolean {
-  return /^0x[a-fA-F0-9]{64}$/.test(value);
-}
-function isValidAmount(value: string): boolean {
-  const num = parseFloat(value);
-  return !isNaN(num) && num > 0;
-}
-function validateInput(input: CryptoInput): boolean {
-  if (!input.value) return false;
-  switch (input.type) {
-    case 'address': return isValidAddress(input.value);
-    case 'transaction': return isValidTransaction(input.value);
-    case 'amount': return isValidAmount(input.value);
-    default: return false;
-  }
-}
-function processInput(input: CryptoInput): string {
-  if (input.type === 'amount') return `Amount: ${input.value} ETH`;
-  return `Processed ${input.type}: ${input.value}`;
-}
-export function mainProcessingLoop(inputs: CryptoInput[]): string[] {
-  const results: string[] = [];
-  for (const input of inputs) {
-    if (!validateInput(input)) {
-      throw new Error(`Invalid ${input.type} input: ${input.value}`);
+export async function executeWithRetry<T>(
+  operation: NetworkOperation<T>,
+  config: RetryConfig = { maxAttempts: 3, baseDelay: 1000 }
+): Promise<T> {
+  const { maxAttempts, baseDelay } = config;
+  let attempt = 0;
+  let lastError: unknown;
+  while (attempt < maxAttempts) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      attempt++;
+      if (attempt < maxAttempts) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
-    results.push(processInput(input));
   }
-  return results;
+  throw lastError as Error;
+}
+export async function fetchWithRetry<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
+  return executeWithRetry(async () => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  });
 }
