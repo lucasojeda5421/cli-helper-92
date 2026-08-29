@@ -1,73 +1,59 @@
-export enum Network {
-  MAINNET = 'mainnet',
-  TESTNET = 'testnet',
-  DEVNET = 'devnet'
+export interface NetworkConfig {
+  name: string;
+  chainId: number;
+  rpcUrl: string;
 }
-
-export type Address = string
-
-export type Hash = string
-
-export type Amount = bigint
-
-export interface KeyPair {
-  publicKey: string
-  privateKey: string
+export interface TokenInfo {
+  symbol: string;
+  address: string;
+  decimals: number;
 }
-
-export interface Wallet {
-  id: string
-  address: Address
-  keyPair: KeyPair
-  balance: Amount
+export type TransactionType = 'transfer' | 'swap';
+export interface TransactionRequest {
+  type: TransactionType;
+  from: string;
+  to: string;
+  value: bigint;
+  gasLimit?: bigint;
 }
-
-export type TransactionStatus = 'pending' | 'confirmed' | 'failed' | 'reverted'
-
-export interface Transaction {
-  hash: Hash
-  from: Address
-  to: Address
-  value: Amount
-  fee: Amount
-  status: TransactionStatus
-  timestamp: number
-  nonce: number
-  data?: string
+export interface TransactionReceipt {
+  hash: string;
+  status: number;
+  blockNumber: number;
+  gasUsed: bigint;
 }
-
-export interface Block {
-  height: number
-  hash: Hash
-  timestamp: number
-  transactions: Transaction[]
-  previousHash: Hash
-  miner: Address
+export interface WalletInfo {
+  address: string;
+  balance: bigint;
+  tokens: Array<{symbol: string, balance: bigint}>;
 }
-
-export interface SignedTransaction extends Transaction {
-  signature: string
-}
-
 export interface CryptoConfig {
-  network: Network
-  rpcEndpoint: string
-  apiKey?: string
-  gasLimit: number
-  timeoutMs: number
+  network: NetworkConfig;
+  apiKey: string;
 }
-
-export type CLIArgs = string[]
-
-export interface Command {
-  name: string
-  description: string
-  handler: (args: CLIArgs) => Promise<void>
+export type ErrorCode = 'INVALID_ADDRESS' | 'INSUFFICIENT_FUNDS' | 'NETWORK_ERROR';
+export interface AppError {
+  code: ErrorCode;
+  message: string;
 }
-
-export type ErrorCode = 400 | 401 | 404 | 500
-
-export interface AppError extends Error {
-  code: ErrorCode
-  context?: Record<string, unknown>
+export function isValidAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+export function toBigInt(value: string | number): bigint {
+  return BigInt(value);
+}
+export class CryptoService {
+  constructor(private config: CryptoConfig) {}
+  validateAddress(addr: string): boolean {
+    return isValidAddress(addr);
+  }
+  async getBalance(address: string): Promise<bigint> {
+    if (!this.validateAddress(address)) {
+      throw {code: 'INVALID_ADDRESS', message: 'Invalid address'} as AppError;
+    }
+    return BigInt(0);
+  }
+  createTx(type: TransactionType, from: string, to: string, value: bigint): TransactionRequest {
+    return {type, from, to, value};
+  }
 }
