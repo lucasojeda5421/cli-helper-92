@@ -1,42 +1,73 @@
-export type NetworkType = 'mainnet' | 'testnet' | 'devnet';
-
-export interface WalletConfig {
-  readonly address: string;
-  readonly derivationPath: string;
-  network: NetworkType;
+export enum Network {
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
+  DEVNET = 'devnet'
 }
 
-export interface TransactionPayload {
-  readonly recipient: string;
-  readonly amount: bigint;
-  readonly fee: bigint;
-  memo?: string;
+export type Address = string
+
+export type Hash = string
+
+export type Amount = bigint
+
+export interface KeyPair {
+  publicKey: string
+  privateKey: string
 }
 
-export interface SignedTransaction extends TransactionPayload {
-  readonly signature: string;
-  readonly txHash: string;
-  readonly timestamp: number;
+export interface Wallet {
+  id: string
+  address: Address
+  keyPair: KeyPair
+  balance: Amount
 }
 
-export type GasEstimate = {
-  limit: bigint;
-  price: bigint;
-};
+export type TransactionStatus = 'pending' | 'confirmed' | 'failed' | 'reverted'
 
-/**
- * Validates a cryptographic address format.
- */
-export function isValidAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
+export interface Transaction {
+  hash: Hash
+  from: Address
+  to: Address
+  value: Amount
+  fee: Amount
+  status: TransactionStatus
+  timestamp: number
+  nonce: number
+  data?: string
 }
 
-/**
- * Converts atomic units to standard coin representation.
- */
-export function formatUnits(amount: bigint, decimals: number = 18): string {
-  const divisor = 10n ** BigInt(decimals);
-  const integerPart = amount / divisor;
-  const fractionalPart = amount % divisor;
-  return `${integerPart}.${fractionalPart.toString().padStart(decimals, '0')}`;
+export interface Block {
+  height: number
+  hash: Hash
+  timestamp: number
+  transactions: Transaction[]
+  previousHash: Hash
+  miner: Address
+}
+
+export interface SignedTransaction extends Transaction {
+  signature: string
+}
+
+export interface CryptoConfig {
+  network: Network
+  rpcEndpoint: string
+  apiKey?: string
+  gasLimit: number
+  timeoutMs: number
+}
+
+export type CLIArgs = string[]
+
+export interface Command {
+  name: string
+  description: string
+  handler: (args: CLIArgs) => Promise<void>
+}
+
+export type ErrorCode = 400 | 401 | 404 | 500
+
+export interface AppError extends Error {
+  code: ErrorCode
+  context?: Record<string, unknown>
 }
