@@ -1,45 +1,33 @@
-export interface CryptoData {
-  id: string;
-  symbol: string;
-  name: string;
-  price: number;
-  marketCap: number;
+import { createHash, randomBytes } from 'crypto';
+
+export function computeHash(input: string | Buffer, algorithm: string = 'sha256'): string {
+  return createHash(algorithm).update(input).digest('hex');
 }
 
-export function normalizeCryptoData(raw: any): CryptoData[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item: any) => ({
-      id: String(item.id || item.coin_id || ''),
-      symbol: String(item.symbol || item.ticker || '').toUpperCase(),
-      name: String(item.name || ''),
-      price: Number(item.price || item.current_price || 0),
-      marketCap: Number(item.market_cap || item.marketCap || 0),
-    }))
-    .filter((item) => item.id.length > 0 && item.price > 0);
+export function getRandomBytes(size: number = 32): Buffer {
+  return randomBytes(size);
 }
 
-export function calculateTotalMarketCap(data: CryptoData[]): number {
-  return data.reduce((total, item) => total + item.marketCap, 0);
+export function hexEncode(data: Buffer | Uint8Array): string {
+  return Buffer.from(data).toString('hex');
 }
 
-export function getHighestPriced(data: CryptoData[], limit: number = 3): CryptoData[] {
-  return data
-    .slice()
-    .sort((a, b) => b.price - a.price)
-    .slice(0, limit);
-}
-
-export function formatNumber(value: number): string {
-  if (value >= 1e9) {
-    return (value / 1e9).toFixed(2) + 'B';
+export function hexDecode(hex: string): Buffer {
+  if (!/^[0-9a-fA-F]*$/.test(hex) || hex.length % 2 !== 0) {
+    throw new Error('Invalid hex input');
   }
-  if (value >= 1e6) {
-    return (value / 1e6).toFixed(2) + 'M';
-  }
-  return value.toFixed(2);
+  return Buffer.from(hex, 'hex');
 }
 
-export function filterByMinimumPrice(data: CryptoData[], minPrice: number): CryptoData[] {
-  return data.filter((item) => item.price >= minPrice);
+export function base64Encode(data: string | Buffer): string {
+  const buf = Buffer.from(data);
+  return buf.toString('base64');
+}
+
+export function base64Decode(encoded: string): Buffer {
+  return Buffer.from(encoded, 'base64');
+}
+
+export function validateCryptoAddress(address: string): boolean {
+  return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
