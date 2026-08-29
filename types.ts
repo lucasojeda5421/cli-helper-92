@@ -1,59 +1,43 @@
-export interface NetworkConfig {
-  name: string;
-  chainId: number;
-  rpcUrl: string;
+export type CryptoSymbol = 'BTC' | 'ETH' | 'SOL' | 'USDT';
+export interface CryptoPriceData {
+  symbol: CryptoSymbol;
+  usdPrice: number;
+  timestamp: number;
 }
-export interface TokenInfo {
-  symbol: string;
-  address: string;
-  decimals: number;
-}
-export type TransactionType = 'transfer' | 'swap';
-export interface TransactionRequest {
-  type: TransactionType;
-  from: string;
-  to: string;
-  value: bigint;
-  gasLimit?: bigint;
-}
-export interface TransactionReceipt {
-  hash: string;
-  status: number;
+export interface CryptoTransactionData {
+  txHash: string;
+  symbol: CryptoSymbol;
+  amount: number;
+  fromAddress: string;
+  toAddress: string;
   blockNumber: number;
-  gasUsed: bigint;
 }
-export interface WalletInfo {
-  address: string;
-  balance: bigint;
-  tokens: Array<{symbol: string, balance: bigint}>;
+export type CryptoData = CryptoPriceData | CryptoTransactionData;
+export function isPriceData(data: CryptoData): data is CryptoPriceData {
+  return (data as CryptoPriceData).usdPrice !== undefined;
 }
-export interface CryptoConfig {
-  network: NetworkConfig;
-  apiKey: string;
+export function isTransactionData(data: CryptoData): data is CryptoTransactionData {
+  return (data as CryptoTransactionData).txHash !== undefined;
 }
-export type ErrorCode = 'INVALID_ADDRESS' | 'INSUFFICIENT_FUNDS' | 'NETWORK_ERROR';
-export interface AppError {
-  code: ErrorCode;
-  message: string;
-}
-export function isValidAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
-}
-export function toBigInt(value: string | number): bigint {
-  return BigInt(value);
-}
-export class CryptoService {
-  constructor(private config: CryptoConfig) {}
-  validateAddress(addr: string): boolean {
-    return isValidAddress(addr);
+export function handleCryptoData(data: CryptoData): string {
+  if (isPriceData(data)) {
+    return `${data.symbol}: $${data.usdPrice} at ${new Date(data.timestamp).toISOString()}`;
   }
-  async getBalance(address: string): Promise<bigint> {
-    if (!this.validateAddress(address)) {
-      throw {code: 'INVALID_ADDRESS', message: 'Invalid address'} as AppError;
-    }
-    return BigInt(0);
+  if (isTransactionData(data)) {
+    return `TX ${data.txHash}: ${data.amount} ${data.symbol} from ${data.fromAddress}`;
   }
-  createTx(type: TransactionType, from: string, to: string, value: bigint): TransactionRequest {
-    return {type, from, to, value};
+  return 'unknown crypto data';
+}
+export function formatPriceData(priceData: CryptoPriceData): string {
+  return `Current price for ${priceData.symbol} is ${priceData.usdPrice} USD`;
+}
+export function validateTransaction(tx: CryptoTransactionData): boolean {
+  return tx.amount > 0 && tx.txHash.length > 0;
+}
+export function aggregatePrices(prices: CryptoPriceData[]): Record<CryptoSymbol, number> {
+  const result: Partial<Record<CryptoSymbol, number>> = {};
+  for (const p of prices) {
+    result[p.symbol] = p.usdPrice;
   }
+  return result as Record<CryptoSymbol, number>;
 }
