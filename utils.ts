@@ -1,37 +1,66 @@
-import { createHash } from 'crypto';
-interface CacheEntry { value: string; timestamp: number; }
-export class CryptoCache {
-  private cache: Map<string, CacheEntry> = new Map();
-  private maxSize: number = 1000;
-  private ttl: number = 60000;
-  private getKey(type: string, input: string): string { return `${type}:${input}`; }
-  private isValid(entry: CacheEntry): boolean { return Date.now() - entry.timestamp < this.ttl; }
-  private evict(): void {
-    if (this.cache.size <= this.maxSize) return;
-    const sorted = Array.from(this.cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
-    const removeCount = this.cache.size - this.maxSize + 10;
-    for (let i = 0; i < removeCount && i < sorted.length; i++) {
-      this.cache.delete(sorted[i][0]);
-    }
+interface Wallet {
+  address: string;
+  privateKey: string;
+}
+
+/**
+ * Generates a wallet from seed.
+ * @param seed - Input seed string
+ * @returns Generated wallet
+ */
+function generateWallet(seed: string): Wallet {
+  const address = '0x' + seed.padEnd(40, '0').slice(0, 40);
+  const privateKey = '0x' + '1'.repeat(64);
+  return { address, privateKey };
+}
+
+/**
+ * Validates crypto address format.
+ * @param address - Address to validate
+ * @returns Validation result
+ */
+function isValidAddress(address: string): boolean {
+  return address.length === 42 && address.startsWith('0x');
+}
+
+/**
+ * Computes simple hash for data.
+ * @param data - Input data
+ * @returns Hash string
+ */
+function simpleHash(data: string): string {
+  let h = 0;
+  for (let i = 0; i < data.length; i++) {
+    h = (h * 31 + data.charCodeAt(i)) | 0;
   }
-  hash(input: string): string {
-    const key = this.getKey('hash', input);
-    const entry = this.cache.get(key);
-    if (entry && this.isValid(entry)) return entry.value;
-    const result = createHash('sha256').update(input).digest('hex');
-    this.evict();
-    this.cache.set(key, { value: result, timestamp: Date.now() });
-    return result;
+  return h.toString(16);
+}
+
+/**
+ * Signs message with private key.
+ * @param message - Message to sign
+ * @param privateKey - Private key
+ * @returns Signature
+ */
+function signMessage(message: string, privateKey: string): string {
+  if (!privateKey.startsWith('0x')) {
+    throw new Error('Bad key');
   }
-  deriveKey(input: string): string {
-    const key = this.getKey('key', input);
-    const entry = this.cache.get(key);
-    if (entry && this.isValid(entry)) return entry.value;
-    const hash1 = createHash('sha256').update(input).digest();
-    const hash2 = createHash('sha256').update(hash1).digest('hex');
-    this.evict();
-    this.cache.set(key, { value: hash2, timestamp: Date.now() });
-    return hash2;
+  return '0x' + simpleHash(message + privateKey).padStart(64, '0');
+}
+
+/**
+ * Prepares and signs a transfer.
+ * @param from - From address
+ * @param to - To address
+ * @param amount - Transfer amount
+ * @param privateKey - Key for signing
+ * @returns Signed tx hash
+ */
+function transfer(from: string, to: string, amount: number, privateKey: string): string {
+  if (!isValidAddress(from) || !isValidAddress(to)) {
+    throw new Error('Invalid addresses');
   }
-  clear(): void { this.cache.clear(); }
+  const txData = from + to + amount.toString();
+  return signMessage(txData, privateKey);
 }
