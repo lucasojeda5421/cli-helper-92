@@ -1,40 +1,35 @@
-export interface NetworkOperation<T> {
-  (): Promise<T>;
+export interface RetryOptions {
+  maxRetries: number;
+  delay: number;
+  shouldRetry: (error: unknown) => boolean;
 }
-export interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number;
-}
-export async function executeWithRetry<T>(
-  operation: NetworkOperation<T>,
-  config: RetryConfig = { maxAttempts: 3, baseDelay: 1000 }
+
+export async function retry<T>(
+  fn: () => Promise<T>,
+  options: Partial<RetryOptions> = {}
 ): Promise<T> {
-  const { maxAttempts, baseDelay } = config;
-  let attempt = 0;
+  const defaults: RetryOptions = {
+    maxRetries: 3,
+    delay: 1000,
+    shouldRetry: () => true
+  };
+  const opts = { ...defaults, ...options };
   let lastError: unknown;
-  while (attempt < maxAttempts) {
+  for (let i = 0; i <= opts.maxRetries; i++) {
     try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
-      attempt++;
-      if (attempt < maxAttempts) {
-        const delay = baseDelay * Math.pow(2, attempt - 1);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i === opts.maxRetries || !opts.shouldRetry(err)) {
+        break;
       }
+      const wait = opts.delay * Math.pow(2, i);
+      await sleep(wait);
     }
   }
-  throw lastError as Error;
+  throw lastError;
 }
-export async function fetchWithRetry<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
-  return executeWithRetry(async () => {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    return response.json() as Promise<T>;
-  });
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
