@@ -1,36 +1,26 @@
-interface CryptoCache {
-get(input: string): string;
-batchGet(inputs: string[]): string[];
-clear(): void;
-}
+import { z } from 'zod';
 
-const cache = new Map<string, string>();
+const TransactionSchema = z.object({
+  amount: z.number().positive(),
+  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  currency: z.enum(['BTC', 'ETH', 'SOL']),
+});
 
-function hash(input: string): string {
-let h = 0;
-for (let i = 0; i < input.length; i++) {
-h = (h << 5) - h + input.charCodeAt(i);
-h = h & h;
-}
-return (h >>> 0).toString(16);
-}
+export type Transaction = z.infer<typeof TransactionSchema>;
 
-const helpers: CryptoCache = {
-get(input: string): string {
-if (cache.has(input)) {
-return cache.get(input)!;
-}
-const result = hash(input);
-cache.set(input, result);
-return result;
-},
-batchGet(inputs: string[]): string[] {
-return inputs.map((input) => helpers.get(input));
-},
-clear(): void {
-cache.clear();
-}
+export const processTransactions = async (inputs: unknown[]): Promise<void> => {
+  for (const input of inputs) {
+    const validation = TransactionSchema.safeParse(input);
+
+    if (!validation.success) {
+      console.error('Invalid transaction schema:', validation.error.format());
+      continue;
+    }
+
+    await executeTransaction(validation.data);
+  }
 };
 
-export default helpers;
-export { helpers, CryptoCache };
+const executeTransaction = async (tx: Transaction): Promise<void> => {
+  console.log(`Processing ${tx.amount} ${tx.currency} to ${tx.address}`);
+};
