@@ -1,39 +1,61 @@
-import { LRUCache } from 'lru-cache';
-
-interface CryptoConfig {
-  cacheSize: number;
-  refreshInterval: number;
-  endpoints: string[];
+export interface NetworkConfig {
+  rpcUrl: string;
+  chainId: number;
+  explorerUrl?: string;
 }
 
-export const config: CryptoConfig = {
-  cacheSize: 500,
-  refreshInterval: 60000,
-  endpoints: ['https://api.crypto.com/v1', 'https://api.exchange.net/v2']
-};
+export interface CliConfig {
+  defaultNetwork: string;
+  gasLimitMultiplier: number;
+  networks: Record<string, NetworkConfig>;
+}
 
-export const responseCache = new LRUCache<string, any>({
-  max: config.cacheSize,
-  ttl: config.refreshInterval,
-  updateAgeOnGet: true
-});
+/**
+ * Manages configuration parameters for blockchain network connections.
+ */
+export class ConfigManager {
+  private config: CliConfig;
 
-export const getCachedData = async <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
-  const cached = responseCache.get(key);
-  if (cached) return cached as T;
-  
-  const fresh = await fetcher();
-  responseCache.set(key, fresh);
-  return fresh;
-};
+  /**
+   * Initializes CLI helper config with default EVM networks.
+   */
+  constructor() {
+    this.config = {
+      defaultNetwork: 'mainnet',
+      gasLimitMultiplier: 1.2,
+      networks: {
+        mainnet: {
+          rpcUrl: 'https://eth.llamarpc.com',
+          chainId: 1,
+          explorerUrl: 'https://etherscan.io'
+        },
+        sepolia: {
+          rpcUrl: 'https://ethereum-sepolia.publicnode.com',
+          chainId: 11155111,
+          explorerUrl: 'https://sepolia.etherscan.io'
+        }
+      }
+    };
+  }
 
-export const memoize = <T extends (...args: any[]) => any>(fn: T) => {
-  const cache = new Map<string, ReturnType<T>>();
-  return (...args: Parameters<T>): ReturnType<T> => {
-    const key = JSON.stringify(args);
-    if (cache.has(key)) return cache.get(key)!;
-    const result = fn(...args);
-    cache.set(key, result);
-    return result;
-  };
-};
+  /**
+   * Retrieves current CLI configuration settings.
+   */
+  public getConfig(): CliConfig {
+    return this.config;
+  }
+
+  /**
+   * Returns configurations for target chain network.
+   * 
+   * @param name - The registered blockchain identifier
+   * @returns Config details for requested network
+   */
+  public getNetwork(name: string): NetworkConfig {
+    const network = this.config.networks[name];
+    if (!network) {
+      throw new Error(`Network '${name}' is not configured in environment`);
+    }
+    return network;
+  }
+}
