@@ -1,28 +1,37 @@
-import { readFileSync, existsSync } from 'fs';
-
-interface CryptoConfig {
+export interface NetworkConfig {
   rpcUrl: string;
-  timeout: number;
-  retryAttempts: number;
+  chainId: number;
+  timeoutMs: number;
 }
 
-const defaults: CryptoConfig = {
-  rpcUrl: 'https://mainnet.infura.io/',
-  timeout: 5000,
-  retryAttempts: 3
+export interface CryptoConfig {
+  provider: string;
+  retries: number;
+  debug: boolean;
+}
+
+/**
+ * Application configuration management for crypto cli operations
+ */
+export const getNetworkConfig = (network: string): NetworkConfig => {
+  const configs: Record<string, NetworkConfig> = {
+    mainnet: { rpcUrl: 'https://mainnet.infura.io', chainId: 1, timeoutMs: 5000 },
+    sepolia: { rpcUrl: 'https://sepolia.infura.io', chainId: 11155111, timeoutMs: 10000 }
+  };
+
+  return configs[network] || configs['sepolia'];
 };
 
-export const loadConfig = (path: string): CryptoConfig => {
-  if (!existsSync(path)) {
-    return defaults;
-  }
+/**
+ * Global settings for client behavior
+ */
+export const appConfig: CryptoConfig = {
+  provider: 'ethers-v6',
+  retries: 3,
+  debug: false
+};
 
-  try {
-    const fileContent = readFileSync(path, 'utf-8');
-    const parsed: Partial<CryptoConfig> = JSON.parse(fileContent);
-    return { ...defaults, ...parsed };
-  } catch (error) {
-    console.error('Failed to parse config, using defaults');
-    return defaults;
-  }
+export type ConfigRegistry = {
+  network: NetworkConfig;
+  global: CryptoConfig;
 };
