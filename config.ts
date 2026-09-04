@@ -1,61 +1,28 @@
-export interface NetworkConfig {
+import { readFileSync, existsSync } from 'fs';
+
+interface CryptoConfig {
   rpcUrl: string;
-  chainId: number;
-  explorerUrl?: string;
+  timeout: number;
+  retryAttempts: number;
 }
 
-export interface CliConfig {
-  defaultNetwork: string;
-  gasLimitMultiplier: number;
-  networks: Record<string, NetworkConfig>;
-}
+const defaults: CryptoConfig = {
+  rpcUrl: 'https://mainnet.infura.io/',
+  timeout: 5000,
+  retryAttempts: 3
+};
 
-/**
- * Manages configuration parameters for blockchain network connections.
- */
-export class ConfigManager {
-  private config: CliConfig;
-
-  /**
-   * Initializes CLI helper config with default EVM networks.
-   */
-  constructor() {
-    this.config = {
-      defaultNetwork: 'mainnet',
-      gasLimitMultiplier: 1.2,
-      networks: {
-        mainnet: {
-          rpcUrl: 'https://eth.llamarpc.com',
-          chainId: 1,
-          explorerUrl: 'https://etherscan.io'
-        },
-        sepolia: {
-          rpcUrl: 'https://ethereum-sepolia.publicnode.com',
-          chainId: 11155111,
-          explorerUrl: 'https://sepolia.etherscan.io'
-        }
-      }
-    };
+export const loadConfig = (path: string): CryptoConfig => {
+  if (!existsSync(path)) {
+    return defaults;
   }
 
-  /**
-   * Retrieves current CLI configuration settings.
-   */
-  public getConfig(): CliConfig {
-    return this.config;
+  try {
+    const fileContent = readFileSync(path, 'utf-8');
+    const parsed: Partial<CryptoConfig> = JSON.parse(fileContent);
+    return { ...defaults, ...parsed };
+  } catch (error) {
+    console.error('Failed to parse config, using defaults');
+    return defaults;
   }
-
-  /**
-   * Returns configurations for target chain network.
-   * 
-   * @param name - The registered blockchain identifier
-   * @returns Config details for requested network
-   */
-  public getNetwork(name: string): NetworkConfig {
-    const network = this.config.networks[name];
-    if (!network) {
-      throw new Error(`Network '${name}' is not configured in environment`);
-    }
-    return network;
-  }
-}
+};
