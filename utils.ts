@@ -1,22 +1,31 @@
-export const validateAddress = (address: string): boolean => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
+import { ethers } from 'ethers';
+
+export const formatUnits = (value: bigint, decimals: number = 18): string => {
+  return ethers.formatUnits(value, decimals);
 };
 
-export const validateAmount = (amount: string): boolean => {
-  const num = parseFloat(amount);
-  return !isNaN(num) && num > 0;
+export const parseUnits = (value: string, decimals: number = 18): bigint => {
+  return ethers.parseUnits(value, decimals);
 };
 
-export const processInput = (input: Record<string, string>): void => {
-  const { address, amount } = input;
+export const isValidAddress = (address: string): boolean => {
+  return ethers.isAddress(address);
+};
 
-  if (!validateAddress(address)) {
-    throw new Error('invalid wallet address format');
+export const retry = async <T>(fn: () => Promise<T>, retries: number = 3, delay: number = 1000): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return retry(fn, retries - 1, delay);
   }
+};
 
-  if (!validateAmount(amount)) {
-    throw new Error('invalid transaction amount value');
-  }
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
-  console.log('processing validated transaction data');
+export const calculateGasFee = (gasLimit: bigint, gasPrice: bigint): bigint => {
+  return gasLimit * gasPrice;
 };
