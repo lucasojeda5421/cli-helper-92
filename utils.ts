@@ -1,23 +1,30 @@
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  retries: number = 3,
-  delay: number = 1000
-): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    if (retries <= 0) throw error;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    return withRetry(fn, retries - 1, delay * 2);
-  }
+export interface CryptoData {
+  symbol: string;
+  price: number;
+  timestamp: number;
 }
 
-export async function requestWithTimeout<T>(
-  promise: Promise<T>,
-  ms: number
-): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('Request timeout')), ms)
+export const formatCurrency = (amount: number, precision: number = 2): string => {
+  return amount.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: precision,
+  });
+};
+
+export const calculatePercentageChange = (oldPrice: number, newPrice: number): number => {
+  if (oldPrice === 0) return 0;
+  return ((newPrice - oldPrice) / oldPrice) * 100;
+};
+
+export const sanitizeSymbol = (symbol: string): string => {
+  return symbol.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+};
+
+export const validateData = (data: any): data is CryptoData => {
+  return (
+    typeof data.symbol === 'string' &&
+    typeof data.price === 'number' &&
+    typeof data.timestamp === 'number'
   );
-  return Promise.race([promise, timeout]);
-}
+};
