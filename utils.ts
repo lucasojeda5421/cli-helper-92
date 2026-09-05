@@ -1,30 +1,32 @@
-export interface CryptoData {
-  symbol: string;
-  price: number;
-  timestamp: number;
+export class CryptoError extends Error {
+  constructor(public message: string, public code: string, public status?: number) {
+    super(message);
+    this.name = 'CryptoError';
+  }
 }
 
-export const formatCurrency = (amount: number, precision: number = 2): string => {
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: precision,
-  });
+export const handleApiError = (error: unknown): never => {
+  if (error instanceof CryptoError) {
+    throw error;
+  }
+
+  if (error instanceof Error) {
+    throw new CryptoError(error.message, 'INTERNAL_SERVER_ERROR', 500);
+  }
+
+  throw new CryptoError('An unknown error occurred', 'UNKNOWN_ERROR', 500);
 };
 
-export const calculatePercentageChange = (oldPrice: number, newPrice: number): number => {
-  if (oldPrice === 0) return 0;
-  return ((newPrice - oldPrice) / oldPrice) * 100;
+export const validateAddress = (address: string): void => {
+  if (!address.startsWith('0x') || address.length !== 42) {
+    throw new CryptoError('Invalid wallet address format', 'INVALID_ADDRESS', 400);
+  }
 };
 
-export const sanitizeSymbol = (symbol: string): string => {
-  return symbol.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-};
-
-export const validateData = (data: any): data is CryptoData => {
-  return (
-    typeof data.symbol === 'string' &&
-    typeof data.price === 'number' &&
-    typeof data.timestamp === 'number'
-  );
+export const safeExecute = async <T>(fn: () => Promise<T>): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
