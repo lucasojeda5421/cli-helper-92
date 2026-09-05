@@ -1,62 +1,39 @@
 # cli-helper-92
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
-
-`cli-helper-92` is a high-performance command-line interface designed to streamline crypto portfolio tracking and smart contract interaction. It provides developers and traders with instant terminal access to decentralized exchange liquidity pools, gas estimations, and wallet balances without switching contexts.
+A high-performance TypeScript CLI toolkit designed to streamline on-chain data retrieval and wallet management tasks. It provides developers with a robust, type-safe interface for interacting with EVM-compatible networks directly from the terminal.
 
 ## Features
 
-- **Multi-Chain Wallet Tracking:** Monitor ETH, Polygon, and Arbitrum wallet balances and recent transactions natively from your terminal.
-- **Real-Time Gas Oracle:** Fetch optimized gas fees across multiple networks instantly to execute timely transactions with minimal slippage.
-- **DEX Price Aggregator:** Query live token swap rates and liquidity data from Uniswap V3 and Sushiswap directly via RPC endpoints.
-- **Secure Key Management:** Encrypt and store private keys locally using AES-256-GCM encryption with seamless environment variable fallback.
+*   **Real-time Gas Estimation:** Fetches accurate, network-specific gas fees to ensure optimal transaction prioritization.
+*   **Encrypted Key Storage:** Implements local, AES-256 encrypted keystore management for secure automated transaction signing.
+*   **Smart Contract Interaction:** Auto-generates CLI commands from ABI JSON files, allowing for seamless method execution without manual boilerplate.
+*   **Balance Aggregation:** Multi-chain portfolio tracking with native support for ERC-20 token balance lookups across major mainnets.
 
 ## Installation
 
-Ensure you have Node.js version 18 or higher installed on your system. Install the CLI globally using npm:
+Install the package globally via npm:
 
 ```bash
 npm install -g cli-helper-92
 ```
 
-Alternatively, run it on-the-fly via npx:
+## Basic Usage
+
+Initialize a new project workspace and configure your network provider:
 
 ```bash
-npx cli-helper-92 --version
-```
-
-## Usage
-
-Initialize your configuration file and set up your default RPC provider:
-
-```bash
+# Initialize project configuration
 cli-helper-92 init
+
+# Fetch balance for a specific address
+cli-helper-92 balance --address 0x123...abc --network mainnet
+
+# Execute a contract function using a local ABI file
+cli-helper-92 call --abi ./contract.json --method balanceOf --args 0x456...def
 ```
-
-Check the native token balance of a specific Ethereum address:
-
-```bash
-cli-helper-92 balance 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --network mainnet
-```
-
-Estimate current gas fees for a priority transaction:
-
-```bash
-cli-helper-92 gas --network arbitrum
-```
-
-For a complete list of available commands and global flags, run:
-
-```bash
-cli-helper-92 --help
-```
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any bug fixes or feature additions.
 
 ## License
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
